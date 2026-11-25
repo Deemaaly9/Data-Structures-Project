@@ -36,7 +36,7 @@ public class Main {
                 case 5:
                     // TODO (Student 2): ask "rider or driver", then the ID; find the person with
                     // searchRiderById / searchDriverById; printList(person.getSchedule().inOrder());
-                    System.out.println("Not implemented yet.");
+                    showSchedule();
                     break;
                 case 6:
                     showIndexStatistics();
@@ -56,7 +56,7 @@ public class Main {
                     // TODO (Student 2): ask private or shared, read locations, a TimeSlot
                     // (readDateTime twice), driver ID and rider ID(s); call schedulePrivateRide /
                     // scheduleSharedRide; print the new ride ID or that it failed (-1).
-                    System.out.println("Not implemented yet.");
+                    addRide();
                     break;
                 case 11:
                     // TODO (Student 3): read ride ID; print whether system.cancelRide(id) succeeded.
@@ -168,6 +168,76 @@ public class Main {
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid time slot: the pickup must be before the drop-off.");
         }
+    }
+
+    // ---------------------------------------------------------- options (Student 2)
+
+    // Option 5
+    private static void showSchedule() {
+        String kind = readLine("Rider or driver? (R/D): ").toUpperCase();
+        if (!kind.equals("R") && !kind.equals("D")) {
+            System.out.println("Please enter R for rider or D for driver.");
+            return;
+        }
+        int id = readInt("Enter ID: ");
+        IPerson person;
+        if (kind.equals("R"))
+            person = system.searchRiderById(id);
+        else
+            person = system.searchDriverById(id);
+
+        if (person == null) {
+            System.out.println("No " + (kind.equals("R") ? "rider" : "driver")
+                    + " found with ID " + id + ".");
+            return;
+        }
+        System.out.println("Schedule of " + person.getName() + ":");
+        printList(person.getSchedule().inOrder());   // rides in time order
+    }
+
+    // Option 10
+    private static void addRide() {
+        String kind = readLine("Private or shared ride? (P/S): ").toUpperCase();
+        if (!kind.equals("P") && !kind.equals("S")) {
+            System.out.println("Please enter P for private or S for shared.");
+            return;
+        }
+        String pickup = readLine("Enter pickup location: ");
+        String dropoff = readLine("Enter drop-off location: ");
+        IDateTime start = readDateTime("Enter pickup date/time (MM/DD/YYYY HH:MM): ");
+        IDateTime end = readDateTime("Enter drop-off date/time (MM/DD/YYYY HH:MM): ");
+
+        ITimeSlot slot;
+        try {
+            slot = new TimeSlot(start, end);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid time slot: the pickup must be before the drop-off.");
+            return;
+        }
+        int driverId = readInt("Enter driver ID: ");
+
+        int rideId;
+        if (kind.equals("P")) {
+            int riderId = readInt("Enter rider ID: ");
+            rideId = system.schedulePrivateRide(pickup, dropoff, slot, riderId, driverId);
+        } else {
+            String[] parts = readLine("Enter rider IDs separated by spaces: ").split("[ ,]+");
+            int[] riderIds = new int[parts.length];
+            try {
+                for (int i = 0; i < parts.length; i++)
+                    riderIds[i] = Integer.parseInt(parts[i]);
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid rider IDs.");
+                return;
+            }
+            rideId = system.scheduleSharedRide(pickup, dropoff, slot, riderIds, driverId);
+        }
+
+        if (rideId == -1)
+            System.out.println("Failed: unknown rider or driver, duplicate riders, "
+                    + "or a schedule conflict.");
+        else
+            System.out.println("Ride added successfully. Ride ID: " + rideId);
     }
 
     // ---------------------------------------------------------- input helpers
